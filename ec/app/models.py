@@ -83,6 +83,11 @@ class Cart(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "product"], name="uniq_cart_user_product")
+        ]
+
     @property
     def total_cost(self):
         return self.quantity * self.product.discounted_price

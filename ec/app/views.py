@@ -7,6 +7,7 @@ import razorpay
 from django.http import JsonResponse
 from .models import Product,Customer,Cart,Payment,OrderPlaced,Wishlist
 from django.db.models import Q
+from django.db import models
 from .forms import CustomerRegistrationForms,CustomerProfileForm
 from django.contrib import messages
 from django.contrib.auth import views as auth_views
@@ -170,7 +171,10 @@ def add_to_cart(request):
     user = request.user
     product_id = request.GET.get("prod_id")
     product = Product.objects.get(id=product_id)
-    Cart(user=user,product=product).save()
+    cart_item, created = Cart.objects.get_or_create(user=user, product=product)
+    if not created:
+        cart_item.quantity += 1
+        cart_item.save()
     return redirect("/cart")
 
 @login_required
@@ -193,9 +197,8 @@ def show_cart(request):
 def plus_cart(request):
     if request.method == "GET":
         prod_id = request.GET["prod_id"]
-        c= Cart.objects.get(Q(product=prod_id) & Q(user=request.user))
-        c.quantity+=1
-        c.save()
+        Cart.objects.filter(Q(product=prod_id) & Q(user=request.user)).update(quantity=models.F("quantity") + 1)
+        c = Cart.objects.filter(Q(product=prod_id) & Q(user=request.user)).order_by("id").first()
         user = request.user
         cart = Cart.objects.filter(user=user)
         amount = 0
@@ -205,7 +208,7 @@ def plus_cart(request):
         totalamount = amount + 40
         #print(prod_id)
         data={
-            "quantity":c.quantity,
+            "quantity": c.quantity if c else 0,
             "amount": amount,
             "totalamount":totalamount
         }
@@ -215,9 +218,11 @@ def plus_cart(request):
 def minus_cart(request):
     if request.method == "GET":
         prod_id = request.GET["prod_id"]
-        c= Cart.objects.get(Q(product=prod_id) & Q(user=request.user))
-        if c.quantity <= 1:
-            c.delete()
+        c = Cart.objects.filter(Q(product=prod_id) & Q(user=request.user)).order_by("id").first()
+        if not c:
+            quantity = 0
+        elif c.quantity <= 1:
+            Cart.objects.filter(Q(product=prod_id) & Q(user=request.user)).delete()
             quantity = 0
         else:
             c.quantity -= 1
@@ -334,8 +339,7 @@ def orders(request):
 def remove_cart(request):
     if request.method == "GET":
         prod_id = request.GET["prod_id"]
-        c= Cart.objects.get(Q(product=prod_id) & Q(user=request.user))
-        c.delete()
+        Cart.objects.filter(Q(product=prod_id) & Q(user=request.user)).delete()
         user = request.user
         cart = Cart.objects.filter(user=user)
         amount = 0
