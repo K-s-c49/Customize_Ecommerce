@@ -154,6 +154,34 @@ LOGIN_URL = '/account/login/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-RAZOR_KEY_ID = os.getenv("RAZOR_KEY_ID", "")
-RAZOR_KEY_SECRET = os.getenv("RAZOR_KEY_SECRET", "")
+
+# Email
+# Default to console backend for local dev.
+# To enable real email sending, set EMAIL_BACKEND=smtp and provide SMTP settings.
+EMAIL_BACKEND = os.getenv(
+    "EMAIL_BACKEND",
+    "console",
+).strip().lower()
+
+if EMAIL_BACKEND in {"smtp", "smtpbackend", "django"}:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+    EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+    EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+    EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+    EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() == "true"
+    EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").lower() == "true"
+    DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "webmaster@localhost")
+
+# Password reset emails should link back to your site.
+# In production set this to your domain, e.g. https://yourdomain.com
+SITE_URL = os.getenv("SITE_URL", "http://127.0.0.1:8000")
+
+# Django will build absolute links using these settings.
+if "django.contrib.sites" in INSTALLED_APPS:
+    SITE_ID = int(os.getenv("SITE_ID", "1"))
+RAZOR_KEY_ID = os.getenv("RAZOR_KEY_ID", "rzp_test_R6La9y2xpkqPEB")
+RAZOR_KEY_SECRET = os.getenv("RAZOR_KEY_SECRET", "CR5uh6pig8GcJGHe9BpVtQeh")
