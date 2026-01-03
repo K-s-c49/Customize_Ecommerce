@@ -181,12 +181,12 @@ def show_cart(request):
     for p in cart:
         value = p.quantity * p.product.discounted_price
         amount = amount + value
-        totalamount = amount + 40
-        totalitem = 0
-        wishlist = 0
-        if request.user.is_authenticated:
-            totalitem = len(Cart.objects.filter(user=request.user))
-            wishlist = len(Wishlist.objects.filter(user=request.user))
+    totalamount = amount + 40
+    totalitem = 0
+    wishlist = 0
+    if request.user.is_authenticated:
+        totalitem = len(Cart.objects.filter(user=request.user))
+        wishlist = len(Wishlist.objects.filter(user=request.user))
     return render(request,"app/addtocart.html",locals())
 
 @login_required
@@ -216,8 +216,13 @@ def minus_cart(request):
     if request.method == "GET":
         prod_id = request.GET["prod_id"]
         c= Cart.objects.get(Q(product=prod_id) & Q(user=request.user))
-        c.quantity-=1
-        c.save()
+        if c.quantity <= 1:
+            c.delete()
+            quantity = 0
+        else:
+            c.quantity -= 1
+            c.save()
+            quantity = c.quantity
         user = request.user
         cart = Cart.objects.filter(user=user)
         amount = 0
@@ -227,7 +232,7 @@ def minus_cart(request):
         totalamount = amount + 40
         #print(prod_id)
         data={
-            "quantity":c.quantity,
+            "quantity": quantity,
             "amount": amount,
             "totalamount":totalamount
         }
@@ -250,14 +255,26 @@ class checkout(View):
             famount = famount + value
         totalamount = famount + 40
         razoramount = int(totalamount * 100)
-        client = razorpay.Client(auth=(settings.RAZOR_KEY_ID,settings.RAZOR_KEY_SECRET ))
-        data = {"amount":razoramount,"currency":"INR","receipt":"order_rcptid_12"}
-        payment_response = client.order.create(data=data)
-        print(payment_response)
+        razor_key_id = getattr(settings, "RAZOR_KEY_ID", "")
+        razor_key_secret = getattr(settings, "RAZOR_KEY_SECRET", "")
+
+        order_id = None
+        order_status = None
+        payment_response = None
+
+        if razor_key_id and razor_key_secret:
+            client = razorpay.Client(auth=(razor_key_id, razor_key_secret))
+            data = {"amount": razoramount, "currency": "INR", "receipt": "order_rcptid_12"}
+            try:
+                payment_response = client.order.create(data=data)
+                order_id = payment_response.get("id")
+                order_status = payment_response.get("status")
+            except Exception as exc:
+                payment_error = str(exc)
+        else:
+            payment_error = "Razorpay keys are not configured. Set RAZOR_KEY_ID and RAZOR_KEY_SECRET in environment."
         #{'amount': 5993900, 'amount_due': 5993900, 'amount_paid': 0, 'attempts': 0, 'created_at': 1755423011, 'currency': 'INR', 'entity': 'order', 'id': 'order_R6LvkVsEzqBWVN', 'notes': [], 'offer_id': None, 'receipt': 'order_rcptid_12', 'status': 'created'}
-        order_id = payment_response["id"]
-        order_status = payment_response["status"]
-        if order_status == "created":
+        if order_status == "created" and order_id:
             payment = Payment(
                 user =  user,
                 amount = totalamount,

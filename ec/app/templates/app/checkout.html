@@ -5,6 +5,12 @@
 {% block main-content %}
 <div class="container py-5">
 
+  {% if payment_error %}
+    <div class="alert alert-warning" role="alert">
+      {{ payment_error }}
+    </div>
+  {% endif %}
+
   <!-- Flash Messages -->
   {% if messages %}
     {% for message in messages %}
@@ -114,21 +120,25 @@
 
  {% block payment-gateway %}
  <script>
+var razorpayOrderId = "{{ order_id|default:'' }}";
+if (!razorpayOrderId) {
+  console.warn("Razorpay not configured or order creation failed.");
+} else {
 var options = {
-    "key": "rzp_test_R6La9y2xpkqPEB", // Enter the Key ID generated from the Dashboard
-    "amount": "{{razoramount}}", // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
+  "key": "{{ razor_key_id|default:'' }}", // Razorpay Key ID
+  "amount": "{{razoramount}}", // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
     "currency": "INR",
     "name": "K&K products",
     "description": "Test Transaction",
     "image": "https://example.com/your_logo",
-    "order_id": "{{order_id}}", //This is a sample Order ID. Pass the `id` obtained in the response of Step 1
+  "order_id": razorpayOrderId,
     "handler": function (response){
         console.log("success")
         var form = document.getElementById("myform");
         //alert(response.razorpay_payment_id);
         //alert(response.razorpay_order_id);
         //alert(response.razorpay_signature)
-      window.location.href = `http://localhost:8000/paymentdone?order_id=${response.razorpay_order_id}&payment_id=${response.razorpay_payment_id}&cust_id=${form.elements["custid"].value}`
+        window.location.href = `${window.location.origin}/paymentdone?order_id=${response.razorpay_order_id}&payment_id=${response.razorpay_payment_id}&cust_id=${form.elements["custid"].value}`
     },
     "theme": {
         "color": "#3399cc"
@@ -143,5 +153,6 @@ document.getElementById('rzp-button1').onclick = function(e){
     rzp1.open();
     e.preventDefault();
 }
+    }
  </script>
  {% endblock payment-gateway %}

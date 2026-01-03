@@ -2,27 +2,26 @@
 
   // Increase quantity
   // Handle click event on the plus-cart button
-$(".plus-cart").click(function () {
+$(document).on("click", ".plus-cart", function (e) {
+    e.preventDefault();
     // Get the product id from the 'pid' attribute
     var id = $(this).attr("pid").toString();
 
-    // Get the quantity span element (3rd child inside parent node)
-    // This assumes your HTML structure is consistent: 
-    // [minus button, span(quantity), plus button]
-    var eml = this.parentNode.children[2];
+    var $card = $(this).closest(".card");
+    var $qty = $card.find(".cart-qty").first();
 
     console.log("pid =", id);  // Debugging: log product id
 
     // Send AJAX request to Django view
     $.ajax({
         type: "GET",  // Using GET (make sure Django view accepts GET)
-        url: "/pluscart",  // Django URL that increases quantity
+        url: "/pluscart/",  // Django URL that increases quantity
         data: {
             prod_id: id  // Sending product id as query parameter
         },
         success: function (data) {
             console.log("data =", data);  // Debugging: log response from server
-            eml.innerText=data.quantity
+            $qty.text(data.quantity)
             document.getElementById("amount").innerText=data.amount
             document.getElementById("totalamount").innerText=data.totalamount
 
@@ -31,27 +30,30 @@ $(".plus-cart").click(function () {
     });
 });
 
-$(".minus-cart").click(function () {
+$(document).on("click", ".minus-cart", function (e) {
+    e.preventDefault();
     // Get the product id from the 'pid' attribute
     var id = $(this).attr("pid").toString();
 
-    // Get the quantity span element (3rd child inside parent node)
-    // This assumes your HTML structure is consistent: 
-    // [minus button, span(quantity), plus button]
-    var eml = this.parentNode.children[2];
+    var $card = $(this).closest(".card");
+    var $qty = $card.find(".cart-qty").first();
 
     console.log("pid =", id);  // Debugging: log product id
 
     // Send AJAX request to Django view
     $.ajax({
         type: "GET",  // Using GET (make sure Django view accepts GET)
-        url: "/minuscart",  // Django URL that increases quantity
+        url: "/minuscart/",  // Django URL that increases quantity
         data: {
             prod_id: id  // Sending product id as query parameter
         },
         success: function (data) {
             console.log("data =", data);  // Debugging: log response from server
-            eml.innerText=data.quantity
+            if (data.quantity === 0) {
+                $card.remove();
+            } else {
+                $qty.text(data.quantity)
+            }
             document.getElementById("amount").innerText=data.amount
             document.getElementById("totalamount").innerText=data.totalamount
 
@@ -60,29 +62,29 @@ $(".minus-cart").click(function () {
     });
 });
 
-$(".remove-cart").click(function () {
+$(document).on("click", ".remove-cart", function (e) {
+    e.preventDefault();
     // Get the product id from the 'pid' attribute
     var id = $(this).attr("pid").toString();
 
     // Get the quantity span element (3rd child inside parent node)
     // This assumes your HTML structure is consistent: 
     // [minus button, span(quantity), plus button]
-    var eml = this
+    var $card = $(this).closest(".card");
 
 
     // Send AJAX request to Django view
     $.ajax({
         type: "GET",  // Using GET (make sure Django view accepts GET)
-        url: "/removecart",  // Django URL that increases quantity
+        url: "/removecart/",  // Django URL that increases quantity
         data: {
             prod_id: id  // Sending product id as query parameter
         },
         success: function (data) {
             console.log("data =", data);  // Debugging: log response from server
-            eml.innerText=data.quantity
             document.getElementById("amount").innerText=data.amount
             document.getElementById("totalamount").innerText=data.totalamount
-            eml.parentNode.parentNode.parentNode.parentNode.remove()
+            $card.remove();
 
           
         }
