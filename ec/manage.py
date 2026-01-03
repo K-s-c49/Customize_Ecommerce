@@ -2,10 +2,15 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+from pathlib import Path
 
 
 def main():
     """Run administrative tasks."""
+    # Ensure `ec` package is importable regardless of current working directory.
+    # We need the repository root on sys.path so that the `ec/` package is found.
+    repo_root = Path(__file__).resolve().parent.parent
+    sys.path.insert(0, str(repo_root))
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ec.settings')
     try:
         from django.core.management import execute_from_command_line
