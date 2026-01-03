@@ -1,4 +1,4 @@
-live demo https://khushalsingh.pythonanywhere.com/
+live demo 
 
 🛒 Django E-Commerce Project
 
