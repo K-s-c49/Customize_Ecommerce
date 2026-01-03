@@ -10,6 +10,7 @@ from django.db.models import Q
 from .forms import CustomerRegistrationForms,CustomerProfileForm
 from django.contrib import messages
 from django.contrib.auth import views as auth_views
+from django.contrib import auth
 from django.conf import settings
 from django.contrib.auth.decorators import login_required #for def
 from django.utils.decorators import method_decorator #class
@@ -266,18 +267,20 @@ class checkout(View):
             payment.save()
         return render(request,"app/checkout.html",locals())
 
-@csrf_exempt  # ✅ if this is called by Razorpay callback
-@login_required
+@csrf_exempt  # called by Razorpay callback
 def payment_done(request):
     order_id = request.GET.get("order_id")
     payment_id = request.GET.get("payment_id")
     cust_id = request.GET.get("cust_id")
 
-    # Get the customer (your custom model)
-    customer = get_object_or_404(Customer, id=cust_id)
+    # If user hits this while logged out (new session), avoid requiring login again.
+    # We can authenticate from the Customer record for this callback flow.
+    if not request.user.is_authenticated:
+        customer_for_login = get_object_or_404(Customer, id=cust_id)
+        auth.login(request, customer_for_login.user, backend="django.contrib.auth.backends.ModelBackend")
 
-    # Get the actual Django User related to the Customer
-    user = customer.user   # assuming Customer has OneToOneField(User)
+    customer = get_object_or_404(Customer, id=cust_id)
+    user = customer.user
 
     # Update payment
     payment = get_object_or_404(Payment, razorpay_order_id=order_id)
