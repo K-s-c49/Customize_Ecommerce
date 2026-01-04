@@ -28,24 +28,16 @@ SECRET_KEY = os.getenv(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
+DEBUG = False
 
 ALLOWED_HOSTS = [
-    host.strip()
-    for host in os.getenv(
-        "DJANGO_ALLOWED_HOSTS",
-        # Include `testserver` for Django's test client and local checks.
-        "localhost,127.0.0.1,testserver",
-    ).split(",")
-    if host.strip()
+    'khushalsingh.pythonanywhere.com',
+    'localhost',
+    '127.0.0.1',
 ]
 CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv(
-        "DJANGO_CSRF_TRUSTED_ORIGINS",
-        "http://localhost:8000,http://127.0.0.1:8000",
-    ).split(",")
-    if origin.strip()
+    'https://khushalsingh.pythonanywhere.com',
+    'http://localhost:8000',
 ]
 
 
